@@ -170,6 +170,8 @@ pmmap_ext = namedtuple(
 # --- system memory
 
 def virtual_memory():
+    """"""
+    
     total, free, buffers, shared, _, _ = cext.linux_sysinfo()
     cached = active = inactive = None
     with open('/proc/meminfo', 'rb') as f:
@@ -199,6 +201,8 @@ def virtual_memory():
 
 
 def swap_memory():
+    """"""
+    
     _, _, _, _, total, free = cext.linux_sysinfo()
     used = total - free
     percent = usage_percent(used, total, _round=1)
@@ -370,6 +374,8 @@ class Connections:
     """
 
     def __init__(self):
+        """"""
+        
         tcp4 = ("tcp", socket.AF_INET, socket.SOCK_STREAM)
         tcp6 = ("tcp6", socket.AF_INET6, socket.SOCK_STREAM)
         udp4 = ("udp", socket.AF_INET, socket.SOCK_DGRAM)
@@ -390,6 +396,8 @@ class Connections:
         }
 
     def get_proc_inodes(self, pid):
+        """"""
+        
         inodes = defaultdict(list)
         for fd in os.listdir("/proc/%s/fd" % pid):
             try:
@@ -413,6 +421,8 @@ class Connections:
         return inodes
 
     def get_all_inodes(self):
+        """"""
+        
         inodes = {}
         for pid in pids():
             try:
@@ -547,6 +557,8 @@ class Connections:
                         yield (fd, family, type_, path, raddr, status, pid)
 
     def retrieve(self, kind, pid=None):
+        """"""
+        
         if kind not in self.tmap:
             raise ValueError("invalid %r kind argument; choose between %s"
                              % (kind, ', '.join([repr(x) for x in self.tmap])))
@@ -755,18 +767,24 @@ class Process(object):
     __slots__ = ["pid", "_name", "_ppid"]
 
     def __init__(self, pid):
+        """"""
+        
         self.pid = pid
         self._name = None
         self._ppid = None
 
     @wrap_exceptions
     def name(self):
+        """"""
+        
         with open_text("/proc/%s/stat" % self.pid) as f:
             data = f.read()
         # XXX - gets changed later and probably needs refactoring
         return data[data.find('(') + 1:data.rfind(')')]
 
     def exe(self):
+        """"""
+        
         try:
             exe = os.readlink("/proc/%s/exe" % self.pid)
         except OSError as err:
@@ -797,6 +815,8 @@ class Process(object):
 
     @wrap_exceptions
     def cmdline(self):
+        """"""
+        
         with open_text("/proc/%s/cmdline" % self.pid) as f:
             data = f.read()
         if data.endswith('\x00'):
@@ -805,6 +825,8 @@ class Process(object):
 
     @wrap_exceptions
     def terminal(self):
+        """"""
+        
         tmap = _psposix._get_terminal_map()
         with open("/proc/%s/stat" % self.pid, 'rb') as f:
             tty_nr = int(f.read().split(b' ')[6])
@@ -840,6 +862,8 @@ class Process(object):
 
     @wrap_exceptions
     def cpu_times(self):
+        """"""
+        
         with open("/proc/%s/stat" % self.pid, 'rb') as f:
             st = f.read().strip()
         # ignore the first two values ("pid (exe)")
@@ -851,6 +875,8 @@ class Process(object):
 
     @wrap_exceptions
     def wait(self, timeout=None):
+        """"""
+        
         try:
             return _psposix.wait_pid(self.pid, timeout)
         except _psposix.TimeoutExpired:
@@ -861,6 +887,8 @@ class Process(object):
 
     @wrap_exceptions
     def create_time(self):
+        """"""
+        
         with open("/proc/%s/stat" % self.pid, 'rb') as f:
             st = f.read().strip()
         # ignore the first two values ("pid (exe)")
@@ -876,6 +904,8 @@ class Process(object):
 
     @wrap_exceptions
     def memory_info(self):
+        """"""
+        
         with open("/proc/%s/statm" % self.pid, 'rb') as f:
             vms, rss = f.readline().split()[:2]
             return _common.pmem(int(rss) * PAGESIZE,
@@ -883,6 +913,8 @@ class Process(object):
 
     @wrap_exceptions
     def memory_info_ex(self):
+        """"""
+        
         #  ============================================================
         # | FIELD  | DESCRIPTION                         | AKA  | TOP  |
         #  ============================================================
@@ -968,6 +1000,8 @@ class Process(object):
 
     @wrap_exceptions_w_zombie
     def cwd(self):
+        """"""
+        
         # readlink() might return paths containing null bytes causing
         # problems when used with other fs-related functions (os.*,
         # open(), ...)
@@ -976,6 +1010,8 @@ class Process(object):
 
     @wrap_exceptions
     def num_ctx_switches(self):
+        """"""
+        
         vol = unvol = None
         with open("/proc/%s/status" % self.pid, "rb") as f:
             for line in f:
@@ -992,6 +1028,8 @@ class Process(object):
 
     @wrap_exceptions
     def num_threads(self):
+        """"""
+        
         with open("/proc/%s/status" % self.pid, "rb") as f:
             for line in f:
                 if line.startswith(b"Threads:"):
@@ -1000,6 +1038,8 @@ class Process(object):
 
     @wrap_exceptions
     def threads(self):
+        """"""
+        
         thread_ids = os.listdir("/proc/%s/task" % self.pid)
         thread_ids.sort()
         retlist = []
