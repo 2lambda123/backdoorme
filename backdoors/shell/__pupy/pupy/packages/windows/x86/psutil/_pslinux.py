@@ -233,7 +233,7 @@ def cpu_times():
     Last 3 fields may not be available on all Linux kernel versions.
     """
     with open('/proc/stat', 'rb') as f:
-        values = f.readline().split()
+        values = f.readline(5_000_000).split()
     fields = values[1:len(scputimes._fields) + 1]
     fields = [float(x) / CLOCK_TICKS for x in fields]
     return scputimes(*fields)
@@ -246,7 +246,7 @@ def per_cpu_times():
     cpus = []
     with open('/proc/stat', 'rb') as f:
         # get rid of the first line which refers to system wide CPU stats
-        f.readline()
+        f.readline(5_000_000)
         for line in f:
             if line.startswith(b'cpu'):
                 values = line.split()
@@ -518,7 +518,7 @@ class Connections:
         # see: https://github.com/giampaolo/psutil/issues/675
         kw = dict(encoding=FS_ENCODING, errors='replace') if PY3 else dict()
         with open(file, 'rt', **kw) as f:
-            f.readline()  # skip the first line
+            f.readline(5_000_000)  # skip the first line
             for line in f:
                 tokens = line.split()
                 try:
