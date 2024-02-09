@@ -16,3 +16,4 @@ six==1.10.0
 pexpect
 netifaces
 nose-exclude
+defusedxml~=0.7.1

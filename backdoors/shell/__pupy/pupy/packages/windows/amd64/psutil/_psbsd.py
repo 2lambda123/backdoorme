@@ -9,7 +9,6 @@
 import errno
 import functools
 import os
-import xml.etree.ElementTree as ET
 from collections import namedtuple
 
 from . import _common
@@ -18,6 +17,7 @@ from . import _psutil_bsd as cext
 from . import _psutil_posix as cext_posix
 from ._common import conn_tmap, usage_percent, sockfam_to_enum
 from ._common import socktype_to_enum
+import defusedxml.ElementTree
 
 
 __extra__all__ = []
@@ -142,7 +142,7 @@ def cpu_count_physical():
         index = s.rfind("</groups>")
         if index != -1:
             s = s[:index + 9]
-            root = ET.fromstring(s)
+            root = defusedxml.ElementTree.fromstring(s)
             try:
                 ret = len(root.findall('group/children/group/cpu')) or None
             finally:
