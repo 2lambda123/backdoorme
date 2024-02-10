@@ -162,6 +162,20 @@ def boot_time():
 
 
 def disk_partitions(all=False):
+    """Returns a list of tuples containing information about disk partitions.
+    Parameters:
+        - all (bool): If True, returns all partitions, including those that are not mounted. If False, only returns mounted partitions.
+    Returns:
+        - list: A list of tuples containing information about disk partitions. Each tuple contains the following information: (device, mountpoint, fstype, opts).
+    Processing Logic:
+        - Get list of disk partitions.
+        - Loop through each partition.
+        - Check if device is 'none' and set to empty string if so.
+        - If all is False, check if device is absolute path and exists. If not, skip partition.
+        - Create a tuple with device, mountpoint, fstype, and opts.
+        - Append tuple to retlist.
+        - Return retlist."""
+    
     retlist = []
     partitions = cext.disk_partitions()
     for partition in partitions:
@@ -177,6 +191,22 @@ def disk_partitions(all=False):
 
 
 def users():
+    """Returns a list of user information.
+    Parameters:
+        - rawlist (list): List of raw user information.
+        - user (str): User name.
+        - tty (str): Terminal name.
+        - hostname (str): Hostname.
+        - tstamp (str): Timestamp.
+    Returns:
+        - retlist (list): List of processed user information.
+    Processing Logic:
+        - Get raw user information.
+        - Skip reboot or shutdown.
+        - Process user information.
+        - Append processed information to list.
+        - Return list of processed information."""
+    
     retlist = []
     rawlist = cext.users()
     for item in rawlist:
@@ -189,6 +219,20 @@ def users():
 
 
 def net_connections(kind):
+    """Function: net_connections
+    Parameters:
+        - kind (str): Specifies the type of connection to be returned. Must be one of the following: 'all', 'tcp', 'tcp4', 'tcp6', 'udp', 'udp4', 'udp6', 'inet', 'inet4', 'inet6', 'inet4v6', 'inet6v6', 'unix', 'process'.
+    Returns:
+        - list: A list of sconn objects representing the network connections that match the specified kind.
+    Processing Logic:
+        - Check if the specified kind is valid.
+        - Get the families and types corresponding to the specified kind.
+        - Create an empty set to store the sconn objects.
+        - Get a list of raw connections using the cext.net_connections() function.
+        - For each connection in the rawlist, check if the family and type match the specified kind.
+        - If they do, create a sconn object and add it to the set.
+        - Convert the set to a list and return it."""
+    
     if kind not in _common.conn_tmap:
         raise ValueError("invalid %r kind argument; choose between %s"
                          % (kind, ', '.join([repr(x) for x in conn_tmap])))
@@ -264,24 +308,73 @@ class Process(object):
     __slots__ = ["pid", "_name", "_ppid"]
 
     def __init__(self, pid):
+        """"Initialize the Process class with the given process ID and set the name and parent process ID to None.
+        Parameters:
+            - pid (int): The process ID to be assigned to the instance.
+        Returns:
+            - None: This function does not return anything.
+        Processing Logic:
+            - Set the process ID to the given pid.
+            - Set the name to None.
+            - Set the parent process ID to None."""
+        
         self.pid = pid
         self._name = None
         self._ppid = None
 
     @wrap_exceptions
     def name(self):
+        """"Returns the process name associated with the given process ID.
+        Parameters:
+            - pid (int): The process ID to retrieve the name for.
+        Returns:
+            - str: The name of the process associated with the given process ID.
+        Processing Logic:
+            - Uses cext.proc_name() to retrieve the process name.
+            - Returns the process name as a string.""""
+        
         return cext.proc_name(self.pid)
 
     @wrap_exceptions
     def exe(self):
+        """Returns the execution of the process ID.
+        Parameters:
+            - self (object): The object containing the process ID.
+        Returns:
+            - str: The execution of the process ID.
+        Processing Logic:
+            - Uses the cext library to process the execution.
+            - Returns the execution as a string."""
+        
         return cext.proc_exe(self.pid)
 
     @wrap_exceptions
     def cmdline(self):
+        """Returns the command line arguments used to launch the process with the given pid.
+        Parameters:
+            - pid (int): The process ID for which the command line arguments will be returned.
+        Returns:
+            - str: The command line arguments used to launch the process with the given pid.
+        Processing Logic:
+            - Uses the cext module to access the process's command line arguments.
+            - Returns the command line arguments as a string.
+            - Requires the process ID as input.
+            - Does not modify the input."""
+        
         return cext.proc_cmdline(self.pid)
 
     @wrap_exceptions
     def terminal(self):
+        """"Returns the terminal associated with the process.
+        Parameters:
+            - self (object): The process object.
+        Returns:
+            - str: The terminal associated with the process, or None if not found.
+        Processing Logic:
+            - Get the process's tty number.
+            - Get the mapping of tty numbers to terminals.
+            - Return the terminal associated with the process's tty number, or None if not found.""""
+        
         tty_nr = cext.proc_tty_nr(self.pid)
         tmap = _psposix._get_terminal_map()
         try:
@@ -291,46 +384,152 @@ class Process(object):
 
     @wrap_exceptions
     def ppid(self):
+        """Returns the parent process ID of the current process.
+        Parameters:
+            - self (class): The current process.
+        Returns:
+            - int: The parent process ID.
+        Processing Logic:
+            - Get the parent process ID.
+            - Use the pid attribute.
+            - Call the cext library.
+            - Use the proc_ppid function."""
+        
         return cext.proc_ppid(self.pid)
 
     @wrap_exceptions
     def uids(self):
+        """Function to retrieve the real, effective, and saved user IDs for a given process ID.
+        Parameters:
+            - pid (int): The process ID for which the user IDs are being retrieved.
+        Returns:
+            - tuple: A tuple containing the real, effective, and saved user IDs for the given process ID.
+        Processing Logic:
+            - Uses the cext module to retrieve the user IDs.
+            - Calls the _common.puids function to format the returned values.
+            - Returns a tuple of the user IDs."""
+        
         real, effective, saved = cext.proc_uids(self.pid)
         return _common.puids(real, effective, saved)
 
     @wrap_exceptions
     def gids(self):
+        """Returns:
+            - list: A list of three elements representing the real, effective, and saved group IDs.
+        Processing Logic:
+            - Calls the cext.proc_gids() function.
+            - Calls the _common.pgids() function.
+            - Returns the result of _common.pgids()."""
+        
         real, effective, saved = cext.proc_gids(self.pid)
         return _common.pgids(real, effective, saved)
 
     @wrap_exceptions
     def cpu_times(self):
+        """Returns:
+            - pcputimes: Returns a named tuple of user and system CPU times.
+        Processing Logic:
+            - Get user and system CPU times.
+            - Convert to named tuple.
+            - Return named tuple."""
+        
         user, system = cext.proc_cpu_times(self.pid)
         return _common.pcputimes(user, system)
 
     @wrap_exceptions
     def memory_info(self):
+        """"Returns the resident set size (rss) and virtual memory size (vms) of the process with the given pid.
+        rss is the amount of physical memory used by the process, while vms is the total amount of virtual memory used by the process.
+        Both values are returned in bytes.
+        If the process does not exist, returns None for both values.
+        Parameters:
+            - pid (int): The process ID of the process to retrieve memory information for.
+        Returns:
+            - rss (int): The resident set size (rss) of the process in bytes.
+            - vms (int): The virtual memory size (vms) of the process in bytes.
+        Processing Logic:
+            - Uses the cext.proc_memory_info() function to retrieve the rss and vms values.
+            - Only the first two values are used, so the [:2] index is used to select them.
+            - The _common.pmem() function is used to convert the values to bytes.
+            - If the process does not exist, returns None for both values.""""
+        
         rss, vms = cext.proc_memory_info(self.pid)[:2]
         return _common.pmem(rss, vms)
 
     @wrap_exceptions
     def memory_info_ex(self):
+        """"Returns the extended memory information for the given process ID.
+        Parameters:
+            - self (type): Instance of the class.
+            - pid (int): Process ID of the process to retrieve memory information for.
+        Returns:
+            - pextmem (tuple): A tuple containing the extended memory information for the given process ID.
+        Processing Logic:
+            - Calls the proc_memory_info function from the cext module.
+            - Passes the process ID as a parameter to the proc_memory_info function.
+            - Uses the pextmem function to return the extended memory information for the given process ID.
+            - Returns a tuple containing the extended memory information.
+        Example:
+            - memory_info_ex(self, 1234) # Returns the extended memory information for process ID 1234.""""
+        
         return pextmem(*cext.proc_memory_info(self.pid))
 
     @wrap_exceptions
     def create_time(self):
+        """"Returns the process creation time for the given process ID.
+        Parameters:
+            - pid (int): The process ID to retrieve the creation time for.
+        Returns:
+            - float: The process creation time in seconds since the epoch.
+        Processing Logic:
+            - Uses cext.proc_create_time() to retrieve the creation time.
+            - Returns the time in seconds since the epoch.""""
+        
         return cext.proc_create_time(self.pid)
 
     @wrap_exceptions
     def num_threads(self):
+        """This function returns the number of threads associated with a given process.
+        Parameters:
+            - pid (int): The process ID of the process.
+        Returns:
+            - int: The number of threads associated with the process.
+        Processing Logic:
+            - Calls the cext.proc_num_threads function.
+            - Returns the number of threads.
+            - Uses the process ID to identify the process."""
+        
         return cext.proc_num_threads(self.pid)
 
     @wrap_exceptions
     def num_ctx_switches(self):
+        """"Returns the number of context switches for the given process ID.
+        Parameters:
+            - pid (int): The process ID to retrieve context switches for.
+        Returns:
+            - int: The number of context switches for the given process ID.
+        Processing Logic:
+            - Uses the cext module to retrieve the number of context switches.
+            - Calls the _common.pctxsw function to format the result.
+            - Returns the formatted result.
+        Example:
+            num_ctx_switches(123) # Returns 50""""
+        
         return _common.pctxsw(*cext.proc_num_ctx_switches(self.pid))
 
     @wrap_exceptions
     def threads(self):
+        """Returns a list of thread information for the given process ID.
+        Parameters:
+            - pid (int): The process ID to retrieve thread information for.
+        Returns:
+            - list: A list of _common.pthread namedtuples containing thread ID, user time, and system time.
+        Processing Logic:
+            - Retrieve raw thread information using cext.proc_threads().
+            - Convert raw thread information into _common.pthread namedtuples.
+            - Append each namedtuple to a list.
+            - Return the list of namedtuples."""
+        
         rawlist = cext.proc_threads(self.pid)
         retlist = []
         for thread_id, utime, stime in rawlist:
@@ -340,6 +539,18 @@ class Process(object):
 
     @wrap_exceptions
     def connections(self, kind='inet'):
+        """"Returns a list of network connections of the specified kind for the given process ID.
+        Parameters:
+            - self (object): The object representing the process.
+            - kind (str): The type of connection to retrieve. Defaults to 'inet'. Valid options are 'inet', 'inet6', 'tcp', 'tcp6', 'udp', 'udp6', 'unix', 'all'.
+        Returns:
+            - list: A list of network connections, each represented as a named tuple with the following fields: fd (int), family (int), type (int), local address (str), remote address (str), and status (str).
+        Processing Logic:
+            - Validates the specified kind argument.
+            - Retrieves the list of connections using the specified process ID and connection types.
+            - Converts the raw data into a list of named tuples.
+            - Returns the list of connections.""""
+        
         if kind not in conn_tmap:
             raise ValueError("invalid %r kind argument; choose between %s"
                              % (kind, ', '.join([repr(x) for x in conn_tmap])))
@@ -357,6 +568,18 @@ class Process(object):
 
     @wrap_exceptions
     def wait(self, timeout=None):
+        """Function:
+        def wait(self, timeout=None):
+            Waits for the process to finish and returns the exit code.
+            Parameters:
+                - timeout (float): Maximum number of seconds to wait for the process to finish.
+            Returns:
+                - int: The exit code of the process.
+            Processing Logic:
+                - Waits for the process to finish.
+                - Returns the exit code.
+                - Raises TimeoutExpired if the process does not finish within the specified timeout."""
+        
         try:
             return _psposix.wait_pid(self.pid, timeout)
         except _psposix.TimeoutExpired:

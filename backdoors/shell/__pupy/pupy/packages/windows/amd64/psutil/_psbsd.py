@@ -162,6 +162,20 @@ def boot_time():
 
 
 def disk_partitions(all=False):
+    """Get a list of disk partitions.
+    Parameters:
+        - all (bool): If True, include all partitions, including those with no mount points. If False, only include partitions with valid mount points.
+    Returns:
+        - list: A list of tuples containing information about each disk partition. Each tuple contains the device name, mount point, file system type, and options.
+    Processing Logic:
+        - Get list of all disk partitions.
+        - Iterate through each partition.
+        - If partition has no mount point, set device name to empty string.
+        - If all is False, skip partitions with invalid device names or non-existent devices.
+        - Create a tuple with device name, mount point, file system type, and options.
+        - Append tuple to list of partitions.
+        - Return list of partitions."""
+    
     retlist = []
     partitions = cext.disk_partitions()
     for partition in partitions:
@@ -177,6 +191,20 @@ def disk_partitions(all=False):
 
 
 def users():
+    """Returns a list of users currently logged in to the system.
+    Parameters:
+        - rawlist (list): A list of raw user data retrieved from cext.users().
+    Returns:
+        - retlist (list): A list of processed user data, each item containing user, tty, hostname, and tstamp.
+    Processing Logic:
+        - Ignore any users with tty set to '~' (reboot or shutdown).
+        - Use _common.suser() to process each user's data.
+        - Append the processed data to retlist.
+        - Return the final list of processed user data.
+    Example:
+        users()
+        # Output: [{'user': 'john', 'tty': 'pts/0', 'hostname': 'localhost', 'tstamp': '2021-05-01 10:30:00'}, {'user': 'jane', 'tty': 'pts/1', 'hostname': 'example.com', 'tstamp': '2021-05-01 11:00:00'}]"""
+    
     retlist = []
     rawlist = cext.users()
     for item in rawlist:
@@ -189,6 +217,8 @@ def users():
 
 
 def net_connections(kind):
+    """"""
+    
     if kind not in _common.conn_tmap:
         raise ValueError("invalid %r kind argument; choose between %s"
                          % (kind, ', '.join([repr(x) for x in conn_tmap])))
@@ -264,24 +294,51 @@ class Process(object):
     __slots__ = ["pid", "_name", "_ppid"]
 
     def __init__(self, pid):
+        """Initializes the Process object with the given process ID (pid).
+        Parameters:
+            - pid (int): The process ID of the process.
+        Returns:
+            - None: This function does not return anything.
+        Processing Logic:
+            - Sets the process ID attribute.
+            - Sets the name attribute to None.
+            - Sets the parent process ID attribute to None."""
+        
         self.pid = pid
         self._name = None
         self._ppid = None
 
     @wrap_exceptions
     def name(self):
+        """"Returns the name of the process with the given process ID.
+        Parameters:
+            - pid (int): The process ID of the process to retrieve the name from.
+        Returns:
+            - str: The name of the process with the given process ID.
+        Processing Logic:
+            - Uses the cext module to retrieve the process name.
+            - Uses the proc_name function from the cext module.
+            - Returns the name as a string.
+            - Does not modify the original process name.""""
+        
         return cext.proc_name(self.pid)
 
     @wrap_exceptions
     def exe(self):
+        """"""
+        
         return cext.proc_exe(self.pid)
 
     @wrap_exceptions
     def cmdline(self):
+        """"""
+        
         return cext.proc_cmdline(self.pid)
 
     @wrap_exceptions
     def terminal(self):
+        """"""
+        
         tty_nr = cext.proc_tty_nr(self.pid)
         tmap = _psposix._get_terminal_map()
         try:
@@ -291,46 +348,66 @@ class Process(object):
 
     @wrap_exceptions
     def ppid(self):
+        """"""
+        
         return cext.proc_ppid(self.pid)
 
     @wrap_exceptions
     def uids(self):
+        """"""
+        
         real, effective, saved = cext.proc_uids(self.pid)
         return _common.puids(real, effective, saved)
 
     @wrap_exceptions
     def gids(self):
+        """"""
+        
         real, effective, saved = cext.proc_gids(self.pid)
         return _common.pgids(real, effective, saved)
 
     @wrap_exceptions
     def cpu_times(self):
+        """"""
+        
         user, system = cext.proc_cpu_times(self.pid)
         return _common.pcputimes(user, system)
 
     @wrap_exceptions
     def memory_info(self):
+        """"""
+        
         rss, vms = cext.proc_memory_info(self.pid)[:2]
         return _common.pmem(rss, vms)
 
     @wrap_exceptions
     def memory_info_ex(self):
+        """"""
+        
         return pextmem(*cext.proc_memory_info(self.pid))
 
     @wrap_exceptions
     def create_time(self):
+        """"""
+        
         return cext.proc_create_time(self.pid)
 
     @wrap_exceptions
     def num_threads(self):
+        """"""
+        
         return cext.proc_num_threads(self.pid)
 
     @wrap_exceptions
     def num_ctx_switches(self):
+        """"""
+        
         return _common.pctxsw(*cext.proc_num_ctx_switches(self.pid))
 
     @wrap_exceptions
     def threads(self):
+        """"""
+        
         rawlist = cext.proc_threads(self.pid)
         retlist = []
         for thread_id, utime, stime in rawlist:
@@ -340,6 +417,8 @@ class Process(object):
 
     @wrap_exceptions
     def connections(self, kind='inet'):
+        """"""
+        
         if kind not in conn_tmap:
             raise ValueError("invalid %r kind argument; choose between %s"
                              % (kind, ', '.join([repr(x) for x in conn_tmap])))
@@ -357,6 +436,8 @@ class Process(object):
 
     @wrap_exceptions
     def wait(self, timeout=None):
+        """"""
+        
         try:
             return _psposix.wait_pid(self.pid, timeout)
         except _psposix.TimeoutExpired:
